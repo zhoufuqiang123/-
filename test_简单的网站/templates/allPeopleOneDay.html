@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>日报表</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+    <script src="../static/js/echarts.min.js"></script>
+    <style>
+        table{
+            color: black;
+            border: 1px solid black;
+            border-collapse: collapse;
+            background-color: skyblue;
+            font-size: 17px;
+            width: 45%;
+            float: left;
+            margin-right: 15px;
+        }
+        td{
+            border:1px solid black;
+            text-align:center;
+            font-size: 15px;
+        }
+        th{
+            border:1px solid black;
+            text-align:center
+
+        }
+    </style>
+</head>
+<body>
+
+<div id="root">
+    <div id="top">
+        <select name="" v-model="date_y">
+            <option value=""> 今年 </option>
+            <option  v-for="i in 100" :value="i+2010" >{{i|add_2010}}</option>
+        </select>
+        <input type="text" v-model="date_m_d" placeholder="输入日期，格式：04-01">
+        <select name="" v-model="staff_name">
+            <option value="">请选择人名</option>
+            <option  v-for="i in staffs" :value="i" >{{i}}</option>
+        </select>
+        <button @click="chaxun">查询</button>
+    </div>
+
+    <table>
+        <tr>
+            <th>日期</td>
+            <th>姓名</td>
+            <th>上班时间<button @click="sort_arrivetime">排序</button></td>
+            <th>下班时间<button @click="sort_leavetime">排序</button></td>
+            <th>当天工作时长 <button @click="sort_worktime">排序</button></td>
+        </tr>
+        <tr v-for="data in data_arrive_leave_time_staffs1">
+            <td>{{ date_one_day }}</td>
+            <td v-for="data_item in data"> {{ data_item|second_ToTime }}</td>
+        </tr>
+    </table>
+
+    <div id="main" style="height:1200px;width: 50%;float: left;"></div>
+    <br>
+</div>
+</body>
+<script>
+    Vue.config.productionTip = false
+    const vm = new Vue({
+        el:'#root',
+        data:{
+            // 查询数据
+            date_y:'2023',
+            date_m_d:'04-01', // 查询员工的日期
+            {#date_one_day:'04-01',  #}
+            staff_name:'', // 查询员工的姓名
+
+            // 表格数据
+            staffs:[], // 所有员工
+            data_arrive_leave_time_staffs:[], // 上班下班时间+员工姓名
+            data_arrive_leave_time_staffs1:[], // 重新整理
+            sort_arrive_time:false,
+            sort_leave_time:false,
+            sort_period:false,
+
+            // 画图数据
+            table_y_axis:[],
+            table_name:[],
+
+
+        },
+        methods:{
+            get_staffs(){
+                return axios
+                  .get('http://10.20.14.27:80/select_all_status_name')
+                  .then(response => (
+
+                      this.staffs=response.data.list_status,
+                      console.log(this.staffs)
+                  ))
+                  .catch(function (error) { // 请求失败处理
+                   console.log(error);
+                  });
+            },
+            get_data_arrive_leave_time_staffs(){
+                return axios({
+                        url: 'http://10.20.14.27:80/get_data_arrive_leave_time_staffs',
+                        method: 'post',
+                        responseType: 'json', // 默认的
+                        data: {
+                            staffs:this.staffs,
+                            date_one_day:this.date_y+'-'+this.date_m_d
+                        }
+                 }).then(
+                     response => (this.data_arrive_leave_time_staffs=response.data.all_data)
+                ).catch(function (error) {
+                    console.log(error);
+                 });
+            },
+            get_init(){
+                if(!this.staffs){
+                    return
+                }
+                this.get_staffs().then(res=>{
+                        this.get_data_arrive_leave_time_staffs()
+                    },rej=>{location.reload()})
+            },
+            chaxun(){
+                if(this.staff_name){
+                    this.get_data_arrive_leave_time_staffs().then(
+                        res=>{
+                            this.data_arrive_leave_time_staffs=this.data_arrive_leave_time_staffs.filter((data)=>{
+                                return data[2]==this.staff_name
+                            })
+                        },rej=>{location.reload()}
+                    )
+                }else {
+                    this.get_data_arrive_leave_time_staffs().then(res=>{
+                            this.table_y_axis=[]
+                            for(i=0;i<this.data_arrive_leave_time_staffs.length;i++){
+                                this.table_y_axis.push(this.data_arrive_leave_time_staffs[i][3])
+                                console.log('执行了吗')
+                            }
+                            show_table()
+                        },rej=>{location.reload()})
+                }
+            },
+            sort_worktime(){
+                if(this.sort_period){
+                    this.sort_period = !this.sort_period
+                     this.data_arrive_leave_time_staffs.sort(function (x,y) {
+                         return y[3]-x[3]
+                     })
+                }else {
+                    this.sort_period = !this.sort_period
+                    this.data_arrive_leave_time_staffs.sort(function (x,y) {
+                         return x[3]-y[3]
+                     })
+                }
+
+                //this.data_arrive_leave_time_staffs.sort(function (x,y) {
+                  //  if(this.sort_period){
+                    //    this.sort_period = !this.sort_period
+                      //  return y[3]-x[3]
+                    //}else {
+                      //  this.sort_period = !this.sort_period
+                        //return x[3]-y[3];
+                    //}
+
+                //})
+            },
+            sort_arrivetime(){
+                if(this.sort_arrive_time){
+                    this.sort_arrive_time = !this.sort_arrive_time
+                     this.data_arrive_leave_time_staffs.sort(function (x,y) {
+                         return y[1]-x[1]
+                     })
+                }else {
+                    this.sort_arrive_time = !this.sort_arrive_time
+                    this.data_arrive_leave_time_staffs.sort(function (x,y) {
+                         return x[1]-y[1]
+                     })
+                }
+            },
+            sort_leavetime(){
+                if(this.sort_leave_time){
+                    this.sort_leave_time = !this.sort_leave_time
+                     this.data_arrive_leave_time_staffs.sort(function (x,y) {
+                         return y[0]-x[0]
+                     })
+                }else {
+                    this.sort_leave_time = !this.sort_leave_time
+                    this.data_arrive_leave_time_staffs.sort(function (x,y) {
+                         return x[0]-y[0]
+                     })
+                }
+            }
+
+
+        },
+        mounted(){
+            {#this.get_init()#}
+            this.get_staffs().then(res=>{
+                        this.get_data_arrive_leave_time_staffs().then(res=>{
+                            for(i=0;i<this.data_arrive_leave_time_staffs.length;i++){
+                                this.table_y_axis.push(this.data_arrive_leave_time_staffs[i][3])
+                            }
+                            show_table()
+                        },rej=>{location.reload()})
+                    },rej=>{location.reload()})
+        },
+        filters:{
+            add_2010(value){
+                return value+2010
+            },
+            second_ToTime(t){
+                if (typeof (t)=='number'){
+                    let h = parseInt(t / 60 / 60 % 24)
+                    let m = parseInt(t / 60 % 60)
+                    let s = parseInt(t % 60 )
+                    // 因为h已经是数字型了，如果0不加引号就变成加法了
+                    h = h < 10 ? '0' + h : h
+                    m = m < 10 ? '0' + m : m
+                    s = s < 10 ? '0' + s : s
+
+                    return h+':'+m+':'+s
+                }
+                return t
+            }
+        },
+        computed:{
+            date_one_day(){
+                return this.date_y+'-'+this.date_m_d
+            }
+        },
+        watch:{
+            data_arrive_leave_time_staffs:{
+                immediate:true,
+                deep:true,
+                handler(newValue,oldValue){
+                    this.data_arrive_leave_time_staffs1=[]
+                    this.table_y_axis=[]
+                    this.table_name = []
+                     for(i=0;i<this.data_arrive_leave_time_staffs.length;i++){
+
+                         this.table_y_axis.push(this.data_arrive_leave_time_staffs[i][3])
+                         this.table_name.push(this.data_arrive_leave_time_staffs[i][2])
+                         item_name = this.data_arrive_leave_time_staffs[i][2]
+                         item_arrivetime = this.data_arrive_leave_time_staffs[i][1]
+                         item_leavetime = this.data_arrive_leave_time_staffs[i][0]
+                         item_period = this.data_arrive_leave_time_staffs[i][3]
+                         this.data_arrive_leave_time_staffs1.push([item_name,item_arrivetime,item_leavetime,item_period])
+
+                     }
+                     this.data_arrive_leave_time_staffs1.reverse()
+                         console.log(this.data_arrive_leave_time_staffs1,'watch中的this指的是=========================================')
+                }
+            }
+        }
+        }
+    )
+    var myChart = echarts.init(document.getElementById('main'));
+    let x_arr = []
+    let y_arr = []
+    for(i=0;i<50;i++){
+        x_arr.push(i+'')
+        y_arr.push(i)
+    }
+    {#console.log(x_arr,'11111111111111111111111111111111 x_arr 111111111111111111111111111111')#}
+    function show_table() {
+        var option = {
+            tooltip:{
+                trigger:'item', //axis
+                {#triggerOn:'click',#}
+                formatter:function (arg) {
+
+                    {#console.log(arg.data)#}
+                    return arg.name+'出勤： '+(arg.data/3600).toFixed(2)+'小时'
+                }
+            },
+
+            title:{
+                left:'center',
+                text:'1天中所有员工在岗时长'
+            },
+            yAxis:{
+                type:'category',
+                data:vm.table_name,
+
+                {#data:x_arr#}
+                axisLabel:{
+                    {#rotate:70#}
+                }
+            },
+            xAxis:{
+                max:3600*11,
+                type:'value',
+                axisLabel:{
+                    formatter:function (value) {
+                        var texts=[];
+                        if(value<=0){
+                            texts.push('0小时')
+                        }
+                        else if(value<=3600*1){
+                            texts.push('1小时')
+                        }
+                        else if(value<=3600*2){
+                            texts.push('2小时')
+                        }
+                        else if(value<=3600*3){
+                            texts.push('3小时')
+                        }
+                        else if(value<=3600*4){
+                            texts.push('4小时')
+                        }
+                        else if(value<=3600*5){
+                            texts.push('5小时')
+                        }
+                        else if(value<=3600*6){
+                            texts.push('6小时')
+                        }
+                        else if(value<=3600*7){
+                            texts.push('7小时')
+                        }
+                        else if(value<=3600*8){
+                            texts.push('8小时')
+                        }
+                        else if(value<=3600*9){
+                            texts.push('9小时')
+                        }
+                        else if(value<=3600*10){
+                            texts.push('10小时')
+                        }
+                        else if(value<=3600*11){
+                            texts.push('11小时')
+                        }
+                        else if(value<=3600*12){
+                            texts.push('12小时')
+                        }
+
+                        return texts;
+                    }
+                }
+            },
+            series:[
+                {
+                    type:'bar',
+                    data:vm.table_y_axis,
+                    {#data:y_arr#}
+                    markLine:{
+                        silent:true,
+                        lineStyle:{
+                            normal:{
+                                color:'#01fef9'
+                            }
+                        },
+                        data:[
+                            {
+                            xAxis: 28800,
+                            {#type:'average',#}
+                            name:'平均值'
+                            },
+                        ],
+                        label:{
+                            normal:{formatter:'8小时'}
+                        }
+                    },
+                    itemStyle:{
+                        color:function (params) {
+                            var num1 = params.value;
+                            if(num1>=28800){
+                                return 'skyblue'
+                            }else {
+                                return 'pink'
+                            }
+                        }
+                    }
+
+                }
+            ]
+
+        }
+        myChart.setOption(option)
+        {#console.log(vm.table_y_axis,'---------看一下y_value------------------')#}
+    }
+    show_table()
+    setInterval(show_table,1000)
+    function show_data() {
+        console.log(vm.table_y_axis)
+        console.log(vm.data_arrive_leave_time_staffs)
+    }
+    {#setInterval(show_data,2000)#}
+</script>
+</html>

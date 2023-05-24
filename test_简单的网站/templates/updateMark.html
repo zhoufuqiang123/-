@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>人工修改</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+    <style>
+        html, body{ height: 100%; }
+        .right{
+            width: 100%;
+            height: 100%;
+        }
+        #root1{
+            height: 97%;
+        }
+        #iframe1{
+            position: fixed;
+            width: 49%;
+            height: 97%;
+            /*width: 100%;*/
+            /*height: 45%;*/
+            {#left: 20%;#}
+            background: lightblue;
+            border: 0px;
+            float: right;
+
+        }
+        #iframe2{
+            position: relative;
+            width: 51%;
+            height: 100%;
+            /*width: 100%;*/
+            /*height: 40%;*/
+            left: 49%;
+            background: lightblue;
+            border: 0px;
+            /*float: right;*/
+
+        }
+        #mid_div_span2{
+            float: right;
+            right: 22%;
+            position: absolute;
+        }
+        .middle_div{
+            width: 100%;
+            height: 25px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root1">
+        <div class="middle_div">
+            <span id="mid_div_span2">
+                <input type="text" placeholder="输入日期" id="input_date_middle1" v-model="src1">
+                <button @click="mid_click1" id="mid_btn2"> 提交查询日期</button>
+                <button @click="junp_new_window2">在新页面打开右边页面</button>
+                <button @click="junp_new_window2_julei">打开标注结果</button>
+            </span>
+
+        </div>
+        <div class="right">
+
+            <iframe :src="ifram_src" scrolling="yes" id="iframe1" frameborder="0" ></iframe>
+            <iframe :src="ifram_src_julei" scrolling="yes" id="iframe2" frameborder="0" ></iframe>
+
+        </div>
+    </div>
+</body>
+<script>
+    Vue.config.productionTip = false
+    const vm = new Vue({
+        el:'#root1',
+        data:{
+            src:'',
+            src1:'',
+            ifram_src:'/test_sql_img/04-05',
+            // ifram_src_marked:'/test_sql_img_marked/04-05'
+            ifram_src_julei:'/test_sql_img_julei/05-01'
+        },
+        methods:{
+            mid_click(){
+                if(!this.src){
+                    alert('请在左边输入框输入日期')
+                }else if(this.src.length!=5) {
+                    alert('请输入正确格式的日期，正确格式样例：04-07')
+                }else{
+                    this.ifram_src = '/test_sql_img/'+this.src
+                    // console.log(this.src)
+                }
+            },
+            mid_click1(){
+                if(!this.src1){
+                    alert('请在左边输入框输入日期')
+                }else if(this.src1.length!=5){
+                    alert('请输入正确格式的日期，正确格式样例：04-07')
+                }else{
+                    // this.ifram_src_marked = '/test_sql_img_marked/'+this.src1
+                    this.ifram_src_julei = '/test_sql_img_julei/'+this.src1
+                    console.log(this.src1)
+                }
+            },
+            junp_new_window1(){
+                window.open(this.ifram_src)
+            },
+            junp_new_window2(){
+                // window.open(this.ifram_src_marked)
+                window.open(this.ifram_src_julei)
+            },
+            junp_new_window2_julei(){
+                if(!this.src1){
+                    alert('请在左边输入框输入日期')
+                }else if(this.src1.length!=5){
+                    alert('请输入正确格式的日期，正确格式样例：04-07')
+                }else{
+                    window.open('/test_sql_img_marked/'+this.src1)
+                }
+            },
+        }
+
+
+    })
+</script>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+</head>
+<body>
+<div id="root">
+
+    <ul >
+        <li v-for="s in staffs">
+            {{s}}
+<!--            <img v-for="img in images" :src="img" alt="暂无图片">-->
+<!--            <a href="/showImages"><button @click="">查看照片</button></a>-->
+        </li>
+    </ul>
+</div>
+<img src="../static/img/1.jpeg" alt="">
+
+</body>
+<script>
+    Vue.config.productionTip=false
+
+    const vm = new Vue({
+        el:'#root',
+        data:{
+            staffs:[],
+            images:[]
+        },
+        methods:{
+            reqImages(){
+
+            }
+        },
+        mounted () {
+            function getStaffs(){
+                return axios.get('http://127.0.0.1:80/getStaffs')
+            }
+            function getImages(){
+                return axios.get('http://127.0.0.1:80/getImages')
+            }
+            axios
+              .all([getStaffs(),getImages()])
+              .then(axios.spread(function(resGetStuff, resGetImage){
+                // 两个请求现在都执行完成
+                this.staffs=resGetStuff.data[0].info;
+                this.images=resGetImage.data
+               }))
+              .catch(function (error) { // 请求失败处理
+                console.log(error);
+              });
+        },
+    })
+</script>
+</html>

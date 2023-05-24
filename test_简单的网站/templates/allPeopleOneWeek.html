@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>周报表</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+    <script src="../static/js/echarts.min.js"></script>
+    <style>
+        table{
+            color: black;
+            border: 1px solid black;
+            border-collapse: collapse;
+            background-color: lightgreen; {# lawngreen #}
+            font-size: 17px;
+            width: 45%;
+            float: left;
+            margin-right: 15px;
+        }
+        td{
+            border:1px solid black;
+            text-align:center;
+            font-size: 15px;
+        }
+        th{
+            border:1px solid black;
+            text-align:center
+        }
+    </style>
+</head>
+<body>
+<div id="root">
+    <div id="top">
+        <select name="" v-model="date_y">
+            <option value=""> 年 </option>
+            <option  v-for="i in 100" :value="i+2010" >{{i|add_2010}}</option>
+        </select>
+        <select name="" v-model="date_m">
+            <option value="">月</option>
+            <option v-for="i in 12" :value="i">{{ i }}月</option>
+        </select>
+        <select name="" v-model="num_week">
+            <option value="">周</option>
+            <option v-for="i in 5" :value="i">第{{ i }}周</option>
+        </select>
+        <button @click="chaxun">查询</button>
+        <br>
+        <select name="" v-model="staff_name">
+            <option value="">请选择人名</option>
+            <option  v-for="i in staffs" :value="i" >{{i}}</option>
+        </select>
+        <button @click="chaxun1">查询</button>
+        <button @click="flash_table">刷新表格</button>
+    </div>
+
+    <div id="middel">
+        <table>
+            <tr>
+                <th>日期</th>
+                <th>姓名</th>
+                <th >{{ date_one_week[0] }}(周一)</th>
+                <th >{{ date_one_week[1] }}(周二)</th>
+                <th >{{ date_one_week[2] }}(周三)</th>
+                <th >{{ date_one_week[3] }}(周四)</th>
+                <th >{{ date_one_week[4] }}(周五)</th>
+                <th >{{ date_one_week[5] }}(周六)</th>
+                <th >{{ date_one_week[6] }}(周天)</th>
+                <th>本周时长(工作日)<button @click="sort_sum_workdays_period">排序</button></th>
+                <th>平均时长（工作日）</th>
+            </tr>
+{#            <tr v-for="(i,index) in staffs">#}
+{#                <td>{{ date_y }}-{{ date_m1 }}第{{ num_week }}周</td>#}
+{#                <td>{{ i }}</td>#}
+{#                <td v-for="j in period_days[index]">{{ j }}</td>#}
+{#                <td>{{ period_weekday[index] }}</td>#}
+{#                <td>{{ average_weekday[index] }}</td>#}
+{#            </tr>#}
+            <tr v-for="(i,index) in all_data_one_week1">
+                <td>{{ date_y }}-{{ date_m1 }}第{{ num_week }}周</td>
+                <td v-for="j in i">{{ j }}</td>
+            </tr>
+        </table>
+
+        <div id="main" style="height:1200px;width: 50%;float: left;"></div>
+    </div>
+</div>
+</body>
+<script>
+    Vue.config.productionTip = false
+    const vm = new Vue({
+        el:'#root',
+        data:{
+            // 年几月几周，姓名，周一到周天时长信息，本周时长，周平均
+            // 人名，年月周
+
+            num_week:'4',
+            date_y:'2023',
+            date_m:'3',
+            staff_name:'',
+
+            all_data_one_week:[],
+            all_data_one_week1:[],
+            date_one_week:[], // 周一到周天日期
+            staffs:[],        // 所有员工
+            //period_days:[],
+            //period_weekday:[], // 总工作时长
+            //average_weekday:[], // 平均工作时长
+
+            // 表格排序
+            flag_sum_workdays_period:false,
+
+            // chart 数据
+            data_xAixs:[],
+            data_yAixs:[],
+
+        },
+        methods:{
+            chaxun(){
+                this.get_data_one_week()
+            },
+            chaxun1(){
+                var get_ele = document.getElementsByTagName('td')
+                for(i =0;i<get_ele.length;i++){
+                    if(get_ele[i].innerHTML == this.staff_name){
+                        //get_ele[i].parentNode.style.color="yellow"
+                        get_ele[i].parentNode.style.backgroundColor="yellow"
+                        //console.log(get_ele[i].parentNode)
+                    }
+                }
+                //console.log(get_ele,'===========ele===================================')
+            },
+            flash_table(){
+                var get_ele = document.getElementsByTagName('tr')
+                for(i =0;i<get_ele.length;i++){
+                    get_ele[i].style.backgroundColor=""
+                }
+            },
+            get_staffs(){
+                return axios
+                  .get('http://10.20.14.27:80/select_all_status_name')
+                  .then(response => (
+
+                      this.staffs=response.data.list_status,
+                      console.log(this.staffs)
+                  ))
+                  .catch(function (error) { // 请求失败处理
+                   console.log(error);
+                  });
+            },
+            get_data_one_week(){
+                return axios({
+                        url: 'http://10.20.14.27:80/all_data_one_week',
+                        method: 'post',
+                        responseType: 'json', // 默认的
+                        data: {
+                            staffs:this.staffs,
+                            date_select:this.date_select
+                        }
+                 }).then(
+                     response => (
+                         this.all_data_one_week=response.data.all_data,
+                             this.date_one_week = this.all_data_one_week[0],
+                             console.log(this.all_data_one_week,'methods方法get_data_one_week')
+                     )
+                ).catch(function (error) {
+                    console.log(error);
+                 });
+            },
+            sort_sum_workdays_period(){
+                if(this.flag_sum_workdays_period){
+                    this.flag_sum_workdays_period = !this.flag_sum_workdays_period
+                     this.all_data_one_week1.sort(function (x,y) {
+                         return y[8]-x[8]
+                     })
+                }else {
+                    this.flag_sum_workdays_period = !this.flag_sum_workdays_period
+                    this.all_data_one_week1.sort(function (x,y) {
+                         return x[8]-y[8]
+                     })
+                }
+            },
+        },
+        watch:{
+            all_data_one_week:{
+                //immediate:true,
+                deep:true,
+                handler(newVlue,oldValue){
+                    temp_1 =[]
+                    //temp_2 = []
+                    temp_3 = []
+                    {#console.log(newVlue[1],'===========newVlue====================')#}
+                    for(i=0;i<newVlue[1].length;i++){
+                        temp1 = 0
+                        //temp2 = 0
+                        temp_3.push([this.staffs[i]])
+                        //this.data_yAixs.push(this.staffs[i])  // 添加x轴数据
+                        for(j=0;j<newVlue[1][i].length;j++){
+                            if(j<5){
+                                temp1+=newVlue[1][i][j]
+                            }
+                            temp_3[i].push(newVlue[1][i][j])
+                            if(j == newVlue[1][i].length-1){
+                                temp_3[i].push(temp1.toFixed(2))
+                                //this.data_xAixs.push((temp1/5).toFixed(2))  // 添加y轴数据
+                                temp_3[i].push((temp1/5).toFixed(2))
+                            }
+
+                        }
+                    }
+
+                    {#console.log(temp_1,'===================temp_1============================')#}
+
+                    this.all_data_one_week1 = temp_3
+                    console.log(temp_3,'================= temp_3 =====================')
+                }
+            },
+            all_data_one_week1:{
+                //immediate:true,
+                deep:true,
+                handler(newVlue,oldValue){
+                    this.data_yAixs=[]
+                    this.data_xAixs=[]
+                    for(i=0;i<newVlue.length;i++){
+                        this.data_yAixs.push(newVlue[i][0])  // 添加y轴数据
+                        this.data_xAixs.push(newVlue[i][9])  // 添加y轴数据
+                    }
+                    this.data_xAixs.reverse()
+                    this.data_yAixs.reverse()
+                }
+            }
+        },
+        mounted(){
+            this.get_staffs().then(
+                res=>{
+                    this.get_data_one_week()
+                },rej=>{location.reload()}
+            )
+        },
+        computed:{
+            date_m1(){
+
+                if (this.date_m<10){
+                    return '0'+this.date_m
+                }else {
+                    return this.date_m
+                }
+            },
+            date_select(){
+                return this.date_y+'-'+this.date_m1+'-'+this.num_week
+            },
+        },
+        filters:{
+            add_2010(value){
+                return value+2010
+            },
+        }
+
+    })
+
+    // ================================  画图  =============================================
+    var myChart = echarts.init(document.getElementById('main'));
+    {#console.log(x_arr,'11111111111111111111111111111111 x_arr 111111111111111111111111111111')#}
+    function show_table() {
+        var option = {
+            tooltip:{
+                trigger:'item', //axis
+                {#triggerOn:'click',#}
+                formatter:function (arg) {
+
+                    {#console.log(arg)#}
+                    return arg.name+'一周平均出勤： '+arg.data+'小时'
+                }
+            },
+
+            title:{
+                left:'center',
+                text:'员工1周在岗平均时长'
+            },
+            yAxis:{
+                type:'category',
+                data:vm.data_yAixs,
+
+                {#data:x_arr#}
+                axisLabel:{
+                    {#rotate:70#}
+                }
+            },
+            xAxis:{
+                max:11,
+                type:'value',
+                axisLabel:{
+                    formatter:function (value) {
+                        var texts=[];
+                        if(value<=0){
+                            texts.push('0小时')
+                        }
+                        else if(value<=1){
+                            texts.push('1小时')
+                        }
+                        else if(value<=2){
+                            texts.push('2小时')
+                        }
+                        else if(value<=3){
+                            texts.push('3小时')
+                        }
+                        else if(value<=4){
+                            texts.push('4小时')
+                        }
+                        else if(value<=5){
+                            texts.push('5小时')
+                        }
+                        else if(value<=6){
+                            texts.push('6小时')
+                        }
+                        else if(value<=7){
+                            texts.push('7小时')
+                        }
+                        else if(value<=8){
+                            texts.push('8小时')
+                        }
+                        else if(value<=9){
+                            texts.push('9小时')
+                        }
+                        else if(value<=10){
+                            texts.push('10小时')
+                        }
+                        else if(value<=11){
+                            texts.push('11小时')
+                        }
+                        else if(value<=12){
+                            texts.push('12小时')
+                        }
+
+                        return texts;
+                    }
+                }
+            },
+            series:[
+                {
+                    type:'bar',
+                    data:vm.data_xAixs,
+                    {#data:y_arr#}
+                    markLine:{
+                        silent:true,
+                        lineStyle:{
+                            normal:{
+                                color:'#01fef9'
+                            }
+                        },
+                        data:[
+                            {
+                            xAxis: 8,
+                            {#type:'average',#}
+                            name:'平均值'
+                            },
+                        ],
+                        label:{
+                            normal:{formatter:'8小时'}
+                        }
+                    },
+                    itemStyle:{
+                        color:function (params) {
+                            var num1 = params.value;
+                            if(num1>=8){
+                                return 'green'
+                            }else {
+                                return 'red'
+                            }
+                        }
+                    }
+
+                }
+            ]
+
+        }
+        myChart.setOption(option)
+        {#console.log(vm.data_xAixs,'---------show_table执行了------------------')#}
+    }
+    show_table()
+    setInterval(show_table,1000)
+</script>
+</html>

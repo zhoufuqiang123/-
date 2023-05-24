@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+</head>
+<style>
+    .k{
+        font-size: 50px;
+        clear: both;
+    }
+    .img{
+        width: 150px;
+        height: 200px;
+        margin:15px ;
+    }
+    .input{
+        height: 37px;
+        width: 450px;
+        font-size: 21px;
+        color: gray;
+    }
+    .imgs_son{
+        /*width: 300px;*/
+        margin: 5px;
+        float: left;
+    }
+    .julei{
+
+    }
+    /*.span1 span{*/
+    /*    position: absolute;*/
+    /*    left: 10px;*/
+    /*    top: 10px;*/
+    /*}*/
+    /*img{*/
+    /*    left: 30px;*/
+    /*    top: 30px;*/
+
+    /*}*/
+    /*.k{*/
+    /*    position: relative;*/
+    /*    left: 5px;*/
+
+    /*}*/
+</style>
+<body>
+<div id="root">
+    <input type="number" v-model="num_clusters" placeholder="输入聚类人物个数">
+    <button class="julei" @click="juLei">点击进行聚类</button>
+
+    <ul >
+
+        <li v-for="(v,k) in images" class="li">
+
+            <div class="k">
+                {{k}}
+                <input type="text" v-model:value="toDir" class="input" placeholder="请输入人名文件夹，点击图片转移到指定目录">
+            </div>
+
+            <div>
+                <span v-for="i in v" class="imgs_son">
+
+                    <img  :src="i" alt="暂无图片" class="img" @click="mvImg(i,toDir)">
+                    <br>
+                    <span>{{i | mySlice}}</span>
+                    <br>
+
+                </span>
+            </div>
+
+        </li>
+
+    </ul>
+<!--    <div>{{images}}</div>-->
+</div>
+<!--<img src="../static/img/1.jpeg" alt="">-->
+
+</body>
+<script>
+    Vue.config.productionTip=false
+
+    const vm = new Vue({
+        el:'#root',
+        data:{
+            staffs:[],
+            images:[],
+            toDir:'',
+            num_clusters:null,
+        },
+        methods:{
+            mvImg(path,toDir,e){
+                para=path.split('/')
+                para1=para[para.length-1]
+                para2=para[para.length-2]
+
+                axios
+                  .get('http://10.20.14.27:80/mvImg'+'/'+para2+'='+para1+'='+toDir)
+                  .then(response => (console.log(response.data)))
+                  .catch(function (error) { // 请求失败处理
+                    console.log(error);
+                  });
+                // location.reload();
+                // this.toDir=''
+            },
+            juLei(e){
+
+                axios
+                  .post('http://10.20.14.42:52400/kmeans_clustering',{num_clusters:this.num_clusters})
+                  .then(response => (console.log(response.data)))
+                  .catch(function (error) { // 请求失败处理
+                    console.log(error);
+                  });
+                // location.reload();
+                // this.toDir=''
+            },
+            juLei1(e){
+
+                axios
+                  .post('http://127.0.0.1:51001/1',{num_clusters:this.num_clusters})
+                  .then(response => (console.log(response.data)))
+                  .catch(function (error) { // 请求失败处理
+                    console.log(error);
+                  });
+                // location.reload();
+                // this.toDir=''
+            }
+        },
+        mounted () {
+            axios
+              .get('http://10.31.137.182:80/getStaffs')
+              .then(response => (this.staffs=response.data.info))
+              .catch(function (error) { // 请求失败处理
+                console.log(error);
+              });
+            axios
+              .get('http://10.31.137.182:80/getStaffs1')
+              .then(response => (this.images=response.data))
+              .catch(function (error) { // 请求失败处理
+                console.log(error);
+              });
+        },
+        filters:{
+            mySlice(value){
+                console.log(value)
+                value1 = value.split('/')[4]
+                console.log(value1)
+                value2 = value1.split('_')
+                return value2[0]+'_'+value2[1].slice(0,2)+':'+value2[1].slice(2,4)+value2[2].split('.')[0]
+            }
+        }
+    })
+</script>
+</html>

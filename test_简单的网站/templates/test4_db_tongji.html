@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>日详情</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+    <script src="../static/js/echarts.min.js"></script>
+    <style>
+        body{
+            height: 100%;
+            width: 100%;
+        }
+        .img_span{
+            height: 150px;
+            float: left;
+        }
+        .img_span img{
+            height: 200px;
+        }
+        .div_top{
+            height: 20%;
+            width: 100%;
+        }
+        .top_list{
+            width: 21%;
+            float: left;
+            height: 20%;
+        }
+        #pie_tu{
+            float: left;
+            width: 30%;
+        }
+        .middle_list{
+            width: 21%;
+            float: left;
+
+        }
+        #shijaintu{
+            float: left;
+            width: 70%;
+        }
+    </style>
+</head>
+<body>
+<div id="root">
+    <input type="text" v-model="date_one_day" >
+    <button @click="changeDate">查询</button>
+<!--    上    -->
+    <div class="div_top">
+        <div class="top_list">
+            <h3>总体统计情况</h3>
+            <span>总人数：{{staffs.length-1}}</span>
+            <br>
+            <span>已到总人数：{{arrive_name_list.length}}</span>
+            <br>
+            <span>乐天楼信息系统员工总数量：{{num_all_staff}}</span>
+            <br>
+            <span>已到员工人数：{{num_arrived_staff}}</span>
+            <br>
+            <span>未到员工人数：{{num_all_staff-num_arrived_staff}}</span>
+            <br>
+            <span>未到员工名字：{{not_arrive_name_list}}</span>
+            <br>
+            <br>
+            <button @click="click_test1"> 点击刷新</button>
+        </div>
+        <div id="pie_tu" style="width: 70%;height:200px;"></div>
+    </div>
+
+
+
+<!--    中      -->
+
+    <div class="div_middle" style="clear: both;">
+        <hr>
+        <h3> 今天到达情况统计 </h3>
+        <div>已到总人数：{{arrive_name_list.length}}</div>
+        <div class="middle_list">
+            <span v-for="(i,j) in name_date_from_db">
+                {{i}}
+                <br>
+            </span>
+        </div>
+
+        <div id="shijaintu" style="width: 70%;height:400px;"></div>
+    </div>
+
+
+
+<!--    下      -->
+    <div class="div_botton" style="clear: both;">
+        <div style="">
+            <hr>
+            <select name="" v-model="name_select">
+                <option value="">请选择人名</option>
+                <option  v-for="i in staffs" :value="i" >{{i}}</option>
+            </select>
+
+            <button @click="show_one_week_one_person">查询一周考勤情况</button>
+        </div>
+        <span v-for="data in data_one_week_one_person" class="img_span">
+            <img  :src="data[2]" alt="暂无图片" class="img" @click="update_result_mark(data[0],data[1])">
+            <br>
+                <span>{{data[1]}}&nbsp &nbsp</span>
+        </span>
+    </div>
+
+
+<!--    {{arrive_name_list}}-->
+<!--    {{arrive_time_list}}-->
+
+
+</div>
+
+</body>
+<script>
+    Vue.config.productionTip = false
+    const vm = new Vue({
+        el:'#root',
+        data:{
+            num_all_staff:0,     // 总员工数量
+            num_arrived_staff:0, // 到达员工数量
+            name_list_staff:[],   // 员工名字列表
+            arrive_time_list:[],  // 到达时间列表
+            arrive_name_list:[],  // 到达员工名字
+            not_arrive_name_list:[], // 未到员工名字
+            name_date_from_db:[], // 名字+时间列表
+            data_one_week_one_person:[], // 个人一周考勤数据
+            // 人名选择框
+            name_select:'赖文海', //一周情况人名
+            staffs:[],            // 所有人名字列表
+            date_one_day:'04-01',
+
+        },
+        methods:{
+            click_test1(){
+                // alert(this.num_all_staff)
+                this.num_arrived_staff=0
+                this.not_arrive_name_list=[]
+                if(this.name_list_staff.length>0){
+                    l = []
+                    for(i in this.name_list_staff){
+                        l.push(this.name_list_staff[i])
+                        this.not_arrive_name_list.push(this.name_list_staff[i])
+                    }
+                }
+                console.log(l,'@@@@@@@@@@@@@@@@@@@ l @@@@@@@@@@@@@@@@@@')
+                if(this.arrive_name_list.length>0){
+                    for(i in this.arrive_name_list){
+                        // console.log(typeof(this.arrive_name_list[i]),'@@@@@@@@@@@@@@@@@this.arrive_name_list[i]@@@@@@@@@@@@@@@@')
+                        // console.log(typeof(l[2]),'@@@@@@@@@@@@@@ l @@@@@@@@@@@@@@@@@@@@@')
+                        console.log(this.arrive_name_list[i],'@@@@@@@@@@@@@@@@@this.arrive_name_list[i]@@@@@@@@@@@@@@@@')
+                        console.log(l,'@@@@@@@@@@@@@@ l @@@@@@@@@@@@@@@@@@@@@')
+                        if(l.length!=0){
+                            for(j in l){
+                                console.log(l[j],'######################')
+                                if (this.arrive_name_list[i]==l[j]){
+                                    this.num_arrived_staff +=1
+                                    this.not_arrive_name_list=this.not_arrive_name_list.filter((item=> item!=l[j]))
+
+                                    break
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            show_one_week_one_person(){
+                axios
+                  .get('http://10.20.14.27:80/get_one_week_one_person_data',{params:{name:this.name_select}})
+                  .then(response => (
+                      this.data_one_week_one_person = response.data.all_data,
+                      console.log(this.name_date_from_db,'-----------------------------------------------')
+                  )).catch(function (error) { // 请求失败处理
+                    console.log(error);
+                  });
+            },
+            changeDate(){
+                if(this.date_one_day.length!=5){
+                    alert('请输入正确日期')
+                    return
+                }
+                axios
+                  .get('http://10.20.14.27:80/select_name_date_groupby_name',{params:{time_one_day:this.date_one_day}})
+                  .then(response => (
+                      this.arrive_name_list=response.data.name_list,
+                      this.arrive_time_list = response.data.time_list,
+                      this.name_date_from_db = response.data.all_data,
+                      console.log(this.arrive_name_list,'arrive_name_list',date_one_day),
+                      console.log(this.arrive_time_list,'arrive_time_list'),
+                      console.log(this.name_date_from_db,'--------------------name_date_from_db---------------------------')
+                  )).catch(function (error) { // 请求失败处理
+                    console.log(error);
+                  });
+            }
+        },
+        mounted () {
+            time1 = new Date()
+            demo_month = time1.getMonth()+1
+            demo_day = time1.getDate()
+            if(demo_month<10){
+                demo_month = '0'+demo_month
+            }
+            if(demo_day<10){
+                demo_day = '0' + demo_day
+            }
+            date_one_day = demo_month+"-"+demo_day
+            // console.log('==============================================')
+            console.log(date_one_day)
+            axios
+              .get('http://10.20.14.27:80/select_part_status_name')
+              .then((response)=>(
+                  this.name_list_staff=response.data.list_status,
+                  this.num_all_staff = response.data.list_status.length,
+                  console.log(this.name_list_staff),
+                  console.log(this.num_all_staff)
+            )).catch(function (error) { // 请求失败处理
+               console.log(error);
+              });
+            axios
+              .get('http://10.20.14.27:80/select_name_date_groupby_name',{params:{time_one_day:date_one_day}})
+              .then(response => (
+                  this.arrive_name_list=response.data.name_list,
+                  this.arrive_time_list = response.data.time_list,
+                  this.name_date_from_db = response.data.all_data,
+                  console.log(this.arrive_name_list,'arrive_name_list',date_one_day),
+                  console.log(this.arrive_time_list,'arrive_time_list'),
+                  console.log(this.name_date_from_db,'--------------------name_date_from_db---------------------------')
+              )).catch(function (error) { // 请求失败处理
+                console.log(error);
+              });
+
+            axios
+              .get('http://10.20.14.27:80/select_all_status_name')
+              .then(response => (this.staffs=response.data.list_status))
+              .catch(function (error) { // 请求失败处理
+               console.log(error);
+              });
+            console.log('mounted执行结束')
+            this.show_one_week_one_person()
+
+        },
+    })
+    // 时间比较
+    time_list=['06:00','06:30','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00',
+                '11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00',]
+    time_list_transefor = new Array(time_list.length-1).fill(0);
+    tongji_y =new Array(time_list.length-1).fill(0);
+    // tongji_y =new Array(time_list.length-1).fill(0)
+    for (i in time_list){
+        time_list_transefor[i]=add_y_m_d(time_list[i])
+    }
+    function update_time_list_transefor() {
+        for (i in time_list){
+            // console.log(i,'调用了'+i+'次')
+            time_list_transefor[i]=add_y_m_d(time_list[i])
+        }
+        return time_list_transefor
+    }
+    function loop1(){
+        time_list_transefor = update_time_list_transefor()
+        tongji_y =tongji_y.fill(0);
+        console.log('vm.arrive_time_list:',vm.arrive_time_list)
+        a = 0
+        b = 1
+        for (i in vm.arrive_time_list){
+            t = new Date(vm.arrive_time_list[i])
+            // console.log('##########t##################',t)
+            t = t.getTime()
+            t1 = time_list_transefor[a]
+            t2 = time_list_transefor[b]
+            // console.log('t&t1&t2:',show_format_time(t),'&',show_format_time(t1),'&',show_format_time(t2))
+            while(!time_compare(t,time_list_transefor[a],time_list_transefor[b]) && b<time_list.length) {
+                a += 1
+                b += 1
+                // console.log(time_list_transefor,'####################time_list_transefor######################')
+                // console.log(a,b,'#######################a,b########################')
+            }
+            if(time_compare(t,time_list_transefor[a],time_list_transefor[b]) && a<time_list.length){
+                tongji_y[a]+=1
+                // console.log('@@@@@@@@@@@@ 挑选中的t @@@@@@@@@@@',show_format_time(t))
+            }
+
+            // if(time_compare(t,time_list_transefor[a],time_list_transefor[b]) && a<time_list.length){
+            //     tongji_y[a]+=1
+            //     console.log('@@@@@@@@@@@@ 挑选中的t @@@@@@@@@@@',show_format_time(t))
+            // }
+        }
+        console.log('==========tongji_y==========',tongji_y)
+        myChart.setOption(option1);
+        num_arrived_staff = vm.num_arrived_staff
+        num_not_arrived_staff=vm.num_all_staff-vm.num_arrived_staff
+        option2 = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'cross' }
+            },
+            legend: {
+                bottom:0
+            },
+            series: [
+                {
+                  type: 'pie',
+                  data: [
+                    {
+                      value:num_arrived_staff ,
+                      name: '已到达员工'+num_arrived_staff
+                    },
+                    {
+                      value: num_not_arrived_staff,
+                      name: '未到达员工'+num_not_arrived_staff
+                    }
+                  ],
+                  radius: 75,
+                    center:['25%','50%'],
+                    // normal:{
+                    //         label:{
+                    //             show: true,
+                    //             // formatter: '{b} : {c}次 ({d}%)'
+                    //         },
+                    //         labelLine :{show:true}
+                    //     }
+                }
+            ]
+        };
+        // option1 = {
+        //     tooltip: {
+        //         trigger: 'axis',
+        //         axisPointer: { type: 'cross' }
+        //     },
+        //     legend: {},
+        //     title:{
+        //         text:'当天考勤时间段分布图',
+        //         x: 'center',
+        //     },
+        //   xAxis: {
+        //     type: 'category',
+        //     data: time_list
+        //   },
+        //   yAxis: {
+        //     type: 'value'
+        //   },
+        //   series: [
+        //     {
+        //       data: tongji_y,
+        //       type: 'bar'
+        //     }
+        //   ]
+        // };
+        myChart.setOption(option1);
+        myChart2.setOption(option2)
+    }
+    setInterval(loop1,2000)
+    setInterval(vm.click_test1,1500)
+    var myChart = echarts.init(document.getElementById('shijaintu'));
+    option1 = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'cross' }
+        },
+        legend: {},
+        title:{
+            text:'当天考勤时间段分布图',
+            x: 'center',
+        },
+      xAxis: {
+        type: 'category',
+        data: time_list
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [
+        {
+          data: tongji_y,
+          type: 'bar'
+        }
+      ]
+    };
+    myChart.setOption(option1);
+    var myChart2 = echarts.init(document.getElementById('pie_tu'));
+
+    // 添加年月日
+    function add_y_m_d(t) {
+        time1 = new Date()
+        demo_year = time1.getFullYear()
+        demo_month = time1.getMonth()+1
+        demo_day = time1.getDate()
+        demo_month = (demo_month > 9) ? demo_month : ("0" + demo_month);
+        demo_day = (demo_day < 10) ? ("0" + demo_day) : demo_day;
+        if(vm.date_one_day){
+            var demo_today = demo_year + "-" + vm.date_one_day +" "+t+":00";
+        }else {
+            var demo_today = demo_year + "-" + demo_month + "-" + demo_day+" "+t+":00";
+        }
+        demo_today = new Date(demo_today)
+        // time_stamp_today = demo_today.getTime()
+        return demo_today.getTime()
+    }
+    function time_compare(t,t1,t2) {
+        t = new Date(t).getTime()
+        // t1 = Date.parse(t1.replace(/-/g,"/"))
+        // t2 = Date.parse(t2.replace(/-/g,"/"))
+        if(t-t1>0 && t-t2<0){
+            return true
+        }
+        return false
+    }
+    function show_format_time(t) {
+        return new Date(t).toLocaleString()
+    }
+</script>
+</html>

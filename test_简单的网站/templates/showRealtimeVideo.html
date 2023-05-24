@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>显示实时视频</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+    <style>
+        body{
+            height: 100%;
+            width: 100%;
+        }
+        .img{
+        width: 150px;
+        height: 200px;
+        margin:15px ;
+    }
+    .input{
+        height: 37px;
+        width: 450px;
+        font-size: 21px;
+        color: gray;
+    }
+    .date_chaxun{
+        width: 70px;
+    }
+    .imgs_son{
+        /*width: 300px;*/
+        margin: 5px;
+        float: left;
+    }
+    .julei{
+
+    }
+    #root_title{
+        text-align: center;
+    }
+        #iframe4{
+            height: 730px;
+            width: 62%;
+            transform: scale(1);
+            float:left;
+            {#position: absolute;#}
+            top: 10%;
+            left: 20%;
+            margin:0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+<body>
+<iframe src="http://10.20.14.20:5000/video_feed" scrolling="yes" id="iframe4" frameborder="0" name="myNew2"></iframe>
+<div id="root">
+    <h2 id="root_title">实时照片</h2>
+    <br>
+
+        <span v-for="data in ai_data" class="imgs_son">
+            <input type="checkbox" id="img_checkbox" v-model="img_checkbox" :value="[data[0],data[1]] | connect_name_time" >
+            <img  :src="data[2]" alt="暂无图片" class="img" @click="update_result_mark(data[0],data[1])">
+            <br>
+            <span>{{data[0]}}{{data[1]}}</span>
+            <br>
+        </span>
+</div>
+</body>
+<script>
+    Vue.config.productionTip=false
+
+    const vm = new Vue({
+        el:'#root',
+        data:{
+            staffs:[],  //  人名
+            images:[],
+            toDir:'',
+            num_clusters:null,
+            res_date:'',
+            res_mark:'',
+            img_checkbox:[],  // 多选框收集人名_日期
+            julei_date:'',
+            ai_data:[], //  人名，日期，图片
+            date_chaxun:JSON.parse(sessionStorage.getItem("date_chaxun")) ||'04-05', // 查询日期
+            ai_data_single_man:[],
+            is_chaxun:false,
+        },
+        methods:{
+
+            show_single_man_f1(){
+                this.is_chaxun = !this.is_chaxun
+                time1 = new Date()
+                demo_month = time1.getMonth()+1
+                demo_day = time1.getDate()
+                if(demo_month<10){
+                    demo_month = '0'+demo_month
+                }
+                if(demo_day<10){
+                    demo_day = '0' + demo_day
+                }
+                this.date_chaxun = demo_month+"-"+demo_day
+                return axios
+                  .get('http://10.20.14.27:80/get_ai_data'+'/'+this.date_chaxun)
+                  .then(response => (
+                      this.ai_data=response.data.ai_data,
+                      console.log('函数f1请求得到的this.ai_data：',this.ai_data)
+                  ))
+                  .catch(function (error) { // 请求失败处理
+                   console.log(error);
+                  });
+
+            },
+            show_single_man_f2(){
+                this.ai_data_single_man=[]
+                if(this.ai_data&&this.res_mark){
+                    for (i in this.ai_data){
+                        // console.log(this.ai_data[i][0])
+                        // console.log('需要筛选的人名',this.res_mark)
+                        if (this.ai_data[i][0]==this.res_mark){
+                            this.ai_data_single_man.push(this.ai_data[i])
+                            console.log('添加了照片信息：',this.ai_data[i])
+                        }
+                    }
+                    this.ai_data = this.ai_data_single_man
+                    console.log('筛选信息',this.ai_data_single_man)
+                }
+                console.log('数据是:',this.ai_data)
+            },
+            sleep(time){
+                return new Promise((resolve) => setTimeout(resolve, time));
+            },
+            show_single_man(){
+                this.show_single_man_f1().then(res=>{this.show_single_man_f2()},
+                                                rej=>{location.reload()}
+                )
+            },
+        },
+		watch: {
+		},
+        mounted () {
+            axios
+              .get('http://10.20.14.27:80/select_all_status_name')
+              .then(response => (this.staffs=response.data.list_status))
+              .catch(function (error) { // 请求失败处理
+               console.log(error);
+              });
+
+            axios
+              .get('http://10.20.14.27:80/get_ai_data'+'/'+this.date_chaxun)
+              .then(response => (
+                  this.ai_data=response.data.ai_data,
+                  console.log(this.ai_data)
+              ))
+              .catch(function (error) { // 请求失败处理
+               console.log(error);
+              });
+        },
+        filters:{
+            mySlice(value){
+                console.log(value)
+                value1 = value.split('/')[4]
+                console.log(value1)
+                value2 = value1.split('_')
+                return value2[0]+'_'+value2[1].slice(0,2)+':'+value2[1].slice(2,4)+value2[2].split('.')[0]
+            },
+            connect_name_time(value){
+                return value[0]+'_'+value[1]
+            }
+
+        }
+    })
+    setInterval(vm.show_single_man_f1,2000)
+    {#setInterval(()=>{console.log(111)},1000)#}
+</script>
+</html>

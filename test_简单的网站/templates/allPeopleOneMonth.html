@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>月报表</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+    <script src="../static/js/echarts.min.js"></script>
+    <style>
+        table{
+            color: black;
+            border: 1px solid black;
+            border-collapse: collapse;
+            background-color: lightgreen; {# lawngreen #}
+            font-size: 17px;
+            width: 100%;
+            float: left;
+            margin-right: 15px;
+        }
+        td{
+            border:1px solid black;
+            text-align:center;
+            font-size: 15px;
+        }
+        th{
+            border:1px solid black;
+            text-align:center
+
+        }
+    </style>
+</head>
+<body>
+<div id="root">
+    <div id="top">
+        <select name="" v-model="date_y">
+            <option value=""> 年 </option>
+            <option  v-for="i in 100" :value="i+2010" >{{i|add_2010}}</option>
+        </select>
+        <select name="" v-model="date_m">
+            <option value="">月</option>
+            <option v-for="i in 12" :value="i">{{ i }}月</option>
+        </select>
+        <button @click="chaxun">查询</button>
+        <br>
+        <select name="" v-model="staff_name">
+            <option value="">请选择人名</option>
+            <option  v-for="i in staffs" :value="i" >{{i}}</option>
+        </select>
+        <button @click="chaxun1">查询</button>
+{#        <button @click="flash_table">刷新表格</button>#}
+    </div>
+
+    <div id="middel">
+        <table>
+            <tr>
+                <th>姓名</th>
+                <th v-for="date_day in all_data_one_month[3]">{{ date_day }}</th>
+                <th>平均每天出勤时长<button @click="sort_sum_workdays_period">排序</button></th>
+                <th>出勤异常天数(迟到或早退)</th>
+            </tr>
+            <tr v-for="(data,i) in all_data_one_month1">
+                <td v-for="j in all_data_one_month[3].length+2">{{ all_data_one_month1[i][j-1] }}</td>
+                <td @click="click_abnormal1($event)" style="background-color: pink">
+                    <a href="#" style="text-decoration: none;">
+                        {{ all_data_one_month1[i][num_split] }}
+                    </a>
+                </td>
+            </tr>
+        </table>
+
+        <div id="main" style="height:1200px;width: 50%;float: left;"></div>
+    </div>
+</div>
+</body>
+<script>
+    Vue.config.productionTip = false
+    const vm = new Vue({
+        el:'#root',
+        data:{
+            // 查询个人一个月出勤信息（考勤异常用红色显示），单独查询
+            // 查询所有人一个月出勤信息，显示月平均，考勤异常天数
+            // all_data=[
+            //
+            //            [[7.22,7,97,8,33...]...],每天时长 0
+            //            [8.21,...],平均时长 1
+            //            [异常日期,迟到或早退], 2
+            //            [工作日日期,...],  3
+            //            [3,5,...]出勤异常天数, 4
+            //           ]
+
+            date_y:'2023',
+            date_m:'3',
+            staff_name:'',
+
+            all_data_one_month:[],
+            all_data_one_month1:[],
+            num_split:'',
+            staffs:[],        // 所有员工
+            num_abnormal_days:0,
+
+            // 表格排序
+            flag_sum_workdays_period:false,
+            flag_swich_hours: true, //切换显示每天,或者每天考勤记录
+
+
+        },
+        methods:{
+            get_staffs(){
+                return axios
+                  .get('http://10.20.14.27:80/select_all_status_name')
+                  .then(response => (
+
+                      this.staffs=response.data.list_status,
+                      console.log(this.staffs)
+                  ))
+                  .catch(function (error) { // 请求失败处理
+                   console.log(error);
+                  });
+            },
+            get_data_one_week(){
+                return axios({
+                        url: 'http://10.20.14.27:80/get_all_data_one_month',
+                        method: 'post',
+                        responseType: 'json', // 默认的
+                        data: {
+                            staffs:this.staffs,
+                            date_select:this.date_select
+                        }
+                 }).then(
+                     response => (
+                         this.all_data_one_month=response.data.all_data,
+                             console.log(this.all_data_one_month,'methods方法get_data_one_week')
+                     )
+                ).catch(function (error) {
+                    console.log(error);
+                 });
+            },
+            sort_sum_workdays_period(){
+                num = this.all_data_one_month[3].length+1
+                if(this.flag_sum_workdays_period){
+                    this.flag_sum_workdays_period = !this.flag_sum_workdays_period
+                     this.all_data_one_month1.sort(function (x,y) {
+                         return y[num]-x[num]
+                     })
+                }else {
+                    this.flag_sum_workdays_period = !this.flag_sum_workdays_period
+                    this.all_data_one_month1.sort(function (x,y) {
+                         return x[num]-y[num]
+                     })
+                }
+            },
+            click_abnormal1(e){
+                //var get_ele = document.getElementsByTagName('tr')
+                var trs = document.getElementsByTagName('tr')
+                name_click = e.currentTarget.parentElement.children[0].innerHTML // 获取点击的名字
+                for(i =1;i<trs.length;i++){
+                    if(trs[i].children[0].innerHTML == name_click){
+                        //console.log(this.all_data_one_month[0][i-1])
+                        //console.log('======================================')
+                        //console.log(this.all_data_one_month[2][i-1])
+                        this.flag_swich_hours = !this.flag_swich_hours
+                        if(this.flag_swich_hours){
+                            for(j=0;j<this.all_data_one_month[0][i-1].length;j++){
+                                e.currentTarget.parentElement.children[j+1].innerHTML=this.all_data_one_month1[i-1][j+this.num_split+1]
+                                e.currentTarget.parentElement.style.backgroundColor='yellow'
+                            }
+                        }else {
+                            for(j=0;j<this.all_data_one_month[0][i-1].length;j++){
+                                e.currentTarget.parentElement.children[j+1].innerHTML = this.all_data_one_month1[i-1][j+1]
+                                e.currentTarget.parentElement.style.backgroundColor=''
+                            }
+                        }
+                    }
+                }
+            },
+            chaxun1(){
+                var trs = document.getElementsByTagName('tr')
+                for(i =1;i<trs.length;i++){
+                    if(trs[i].children[0].innerHTML == this.staff_name){
+                        trs[i].style.backgroundColor='yellow'
+                    }
+                }
+            },
+            chaxun(){
+                this.get_data_one_week()
+            },
+        },
+        watch:{
+            all_data_one_month:{
+                //immediate:true,
+                deep:true,
+                handler(newVlue,oldValue){
+                    this.all_data_one_month1=[]
+                    for(i=0;i<newVlue[4].length;i++){
+                        this.all_data_one_month1.push([this.staffs[i]])
+                        for(j=0;j<newVlue[0][i].length;j++){
+                            this.all_data_one_month1[i].push(newVlue[0][i][j])
+                        }
+                        this.all_data_one_month1[i].push(newVlue[1][i])
+                        this.all_data_one_month1[i].push(newVlue[4][i])
+                        for(j=0;j<newVlue[2][i].length;j++){
+                            this.all_data_one_month1[i].push(newVlue[2][i][j])
+                        }
+                    this.num_split = newVlue[3].length+2
+                    }
+                    console.log(this.all_data_one_month1)
+                }
+            },
+        },
+        mounted(){
+            this.get_staffs().then(
+                res=>{
+                    this.get_data_one_week()
+                },rej=>{location.reload()}
+            )
+        },
+        computed:{
+            date_m1(){
+
+                if (this.date_m<10){
+                    return '0'+this.date_m
+                }else {
+                    return this.date_m
+                }
+            },
+            date_select(){
+                return this.date_y+'-'+this.date_m1
+            },
+
+
+
+        },
+        filters:{
+            add_2010(value){
+                return value+2010
+            },
+        }
+
+    })
+
+
+</script>
+</html>

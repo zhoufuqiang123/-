@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>设备管理页面</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+    <style>
+        /*body{*/
+        /*    height: 100%;*/
+        /*}*/
+        html, body{ height: 100%; }
+        .top{
+            width: 100%;
+            height: 5vh;
+            background: gray;
+            border: 0px;
+        }
+        .left{
+            position: fixed;
+            width: 20%;
+            height: 95%;
+            background: gray;
+            border: 0px;
+            margin-top: 0px;
+        }
+        #root1{
+            position: relative;
+            left: 20%;
+            width: 80%;
+            height: 93%;
+            border: 0px;
+            margin-top: 0px;
+        }
+        .right{
+            width: 100%;
+            height: 100%;
+        }
+        .logo{
+            /*background: darkgrey;*/
+            width: 20%;
+            height: 5vh;
+            display: inline-block;
+            border: 1px solid darkgrey;
+            line-height: 5vh;
+            text-align: center;
+            font-weight: bold;
+            float: left;
+        }
+
+        .login_info{
+            /*background: darkgrey;*/
+            width: 150px;
+            height: 5vh;
+            border: 1px solid lightgray;
+            line-height: 5vh;
+            float: right;
+            text-align: center;
+            display: inline-block;
+
+        }
+        .flash_button{
+                    width: 150px;
+                    height: 5vh;
+                    border: 1px solid lightgray;
+                    line-height: 5vh;
+                    float: right;
+                    text-align: center;
+                    display: inline-block;
+
+        }
+
+
+        .list{
+            margin: 0px;
+            padding: 0px;
+            list-style: none;
+            text-align: center;
+            color: blue;
+
+        }
+        /*.list #li1{*/
+        /*    color: purple;*/
+        /*}*/
+        .list li{
+            {#height: 4vh;#}
+            font-weight: bold;
+            border: 1px solid darkgrey;
+            line-height: 4vh;
+
+        }
+        .list a{
+            display: block;
+            text-decoration: none;
+            border: 0px;
+            margin-top: 0px;
+        }
+        ul li ul li{
+            height: 3vh;
+            font-size: 10px;
+            {#color: green;#}
+            list-style: none;
+        }
+        ul li ul li a{
+            color: greenyellow;
+        }
+        ul li ul{
+            display: none;
+        }
+        ul li a{
+            color: blue;
+        }
+
+        #iframe1{
+            position: fixed;
+            width: 43%;
+            height: 93%;
+            /*width: 100%;*/
+            /*height: 45%;*/
+            left: 20%;
+            background: lightblue;
+            border: 0px;
+            float: right;
+
+        }
+        #iframe2{
+            position: relative;
+            width: 54%;
+            height: 100%;
+            /*width: 100%;*/
+            /*height: 40%;*/
+            left: 49%;
+            background: lightblue;
+            border: 0px;
+            /*float: right;*/
+
+        }
+        .middle_div{
+            background: lightblue;
+            width: 100%;
+        }
+        #mid_div_span1{
+            position: relative;
+            left:-25%;
+            float: left;
+        }
+        #mid_div_span2{
+            position: relative;
+            left: 24%;
+        }
+        #iframe3{
+            height: 69%;
+            width: 293%;
+            transform: scale(0.4);
+            float:left;
+            position: absolute;
+            top: 56%;
+            left: -71%;
+        }
+        #iframe4{
+            height: 69%;
+            width: 293%;
+            transform: scale(0.33);
+            float:left;
+            position: absolute;
+            top: 27%;
+            left: -95%;
+        }
+
+
+    </style>
+    <script>
+        window.onload=function () {
+            logo = document.getElementById('logo')
+            oli1 = document.getElementById('li1')
+            oiframe = document.getElementById('iframe')
+            function jumpUrl(url){
+                oiframe.src=url
+            }
+            oli1.onclick=function () {
+                jumpUrl('./dsb/devices.html')
+            }
+            logo.onclick=function () {
+                jumpUrl('/login')
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="top">
+        <span class="logo" id="logo">无感考勤后台管理平台</span>
+
+        <span class="login_info">用户名</span>
+        <span class="flash_button">点我刷新</span>
+    </div>
+    <div class="left" id="left">
+        <ul class="list">
+                <li class="li1" id="li1"> 当天考勤照片 </li>
+                <li class="li2" onclick="showSub(this)"><a href="#" >统计</a>
+                    <ul >
+                        <li id = "detail_one_day"><a href="#">一天详细信息</a></li>
+                        <li id="detail_one_day1"><a href="#">日统计信息</a></li>
+                        <li id="detail_one_week"><a href="#">周统计信息</a></li>
+                        <li id="detail_one_month"><a href="#">月统计信息</a></li>
+                    </ul>
+                </li>
+                <li class="li3"><a href="#">推送到微信</a> </li>
+                <li class="li4"><a href="#">查看所有标注结果</a> </li>
+                <li class="li5" onclick="showSub(this)"><a href="#">实时视频监控</a>
+                    <ul >
+                        <li id = "video1"><a href="./showRealtimeVideo">摄像头1</a></li>
+                        <li id="video2"><a href="#">摄像头2</a></li>
+                        <li id="video3"><a href="#">摄像头3</a></li>
+                        <li id="video4"><a href="#">摄像头4</a></li>
+                    </ul>
+                </li>
+                <li class="li6"><a href="#">人工纠错</a> </li>
+                <span  onclick="hits()" style="cursor:hand" name="myNew1">
+                    <a href="#" style="color: blue" id="hs">隐藏视频</a>
+                </span>
+        </ul>
+{#        https://blog.csdn.net/weixin_47882573/article/details/118380416 vlc把rtsp转http #}
+{#     10.31.59.140   #}
+        <iframe src="http://10.20.14.20:50001/video_feed" scrolling="yes" id="iframe3" frameborder="0" name="myNew1"></iframe>
+        <iframe src="http://10.20.14.20:5000/video_feed" scrolling="yes" id="iframe4" frameborder="0" name="myNew2"></iframe>
+    </div>
+    <div id="root1">
+        <div class="middle_div">
+<!--            <span id="mid_div_span1">-->
+<!--                <input type="text" placeholder="输入日期" id="input_date_middle" v-model="src">-->
+<!--                <button @click="mid_click" id="mid_btn1"> 提交查询日期</button>-->
+<!--                <button @click="junp_new_window1">点击在新页面打开左边页面</button>-->
+
+<!--            </span>-->
+            <span id="mid_div_span2">
+                <input type="text" placeholder="输入日期" id="input_date_middle1" v-model="src1">
+                <button @click="mid_click1" id="mid_btn2"> 提交查询日期</button>
+                <button @click="junp_new_window2">在新页面打开右边页面</button>
+                <button @click="junp_new_window2_julei">打开标注结果</button>
+            </span>
+
+        </div>
+        <div class="right">
+    <!--        <iframe src="../dsb/login_static.html" scrolling="yes" id="iframe" frameborder="0"></iframe>-->
+
+
+            <iframe :src="ifram_src" scrolling="yes" id="iframe1" frameborder="0" ></iframe>
+<!--            <iframe :src="ifram_src_marked" scrolling="yes" id="iframe2" frameborder="0"></iframe>-->
+            <iframe :src="ifram_src_julei" scrolling="yes" id="iframe2" frameborder="0" ></iframe>
+
+        </div>
+    </div>
+</body>
+<script>
+    var flag_nav_show =false
+    flash_btn = document.getElementsByClassName('flash_button')[0]
+    flash_btn.onclick=function () {
+        console.log('btn被点击了')
+        location.reload()
+    }
+    btn_tongji = document.getElementsByClassName('li2')[0]
+    //btn_tongji.onclick=function(){
+        //console.log('统计模块被点击了')
+        //window.open('/tongji')
+    //}
+    function showSub(li){
+        flag_nav_show = !flag_nav_show
+        var submenu = li.getElementsByTagName('ul')[0];
+        if(flag_nav_show){
+            submenu.style.display='block'
+        }else {
+            submenu.style.display='none'
+        }
+    }
+    var detail_one_day = document.getElementById('detail_one_day')
+    detail_one_day.onclick=function hander_tongji_item1(e){
+        e.stopPropagation()
+        window.open('/tongji')
+        console.log(e)
+    }
+    var detail_one_day1 = document.getElementById('detail_one_day1')
+    detail_one_day1.onclick=function hander_tongji_item1(e){
+        e.stopPropagation()
+        window.open('/onePeopleOneDay')
+        console.log(e)
+    }
+    var detail_one_week = document.getElementById('detail_one_week')
+    detail_one_week.onclick=function hander_tongji_item1(e){
+        e.stopPropagation()
+        window.open('/allPeopleOneWeek')
+        console.log(e)
+    }
+    var detail_one_month = document.getElementById('detail_one_month')
+    detail_one_month.onclick=function hander_tongji_item1(e){
+        e.stopPropagation()
+        window.open('/allPeopleOneMonth')
+        console.log(e)
+    }
+    document.getElementsByClassName('li4')[0].onclick = function(){
+        window.open('/show_all_marked_img')
+    }
+    document.getElementsByClassName('li6')[0].onclick = function(){
+        window.open('/updateMark')
+    }
+    var iframe4 = document.getElementById('iframe4')
+    function iframe_click(event){
+        alert('点击了')
+        console.log(event)
+    }
+    function hits() {
+        if (window.hs.innerText == "显示视频") {
+            window.hs.innerHTML = "隐藏视频";
+            document.all.myNew1.style.display = "";
+            document.all.myNew2.style.display = "";
+        } else {
+            window.hs.innerHTML = "显示视频";
+            document.all.myNew1.style.display = "none";
+            document.all.myNew2.style.display = "none";
+        }
+    }
+
+
+    Vue.config.productionTip = false
+    const vm = new Vue({
+        el:'#root1',
+        data:{
+            src:'',
+            src1:'',
+            ifram_src:'/test_sql_img/04-05',
+            // ifram_src_marked:'/test_sql_img_marked/04-05'
+            ifram_src_julei:'/test_sql_img_julei/05-01'
+        },
+        methods:{
+            mid_click(){
+                if(!this.src){
+                    alert('请在左边输入框输入日期')
+                }else if(this.src.length!=5) {
+                    alert('请输入正确格式的日期，正确格式样例：04-07')
+                }else{
+                    this.ifram_src = '/test_sql_img/'+this.src
+                    // console.log(this.src)
+                }
+            },
+            mid_click1(){
+                if(!this.src1){
+                    alert('请在左边输入框输入日期')
+                }else if(this.src1.length!=5){
+                    alert('请输入正确格式的日期，正确格式样例：04-07')
+                }else{
+                    // this.ifram_src_marked = '/test_sql_img_marked/'+this.src1
+                    this.ifram_src_julei = '/test_sql_img_julei/'+this.src1
+                    console.log(this.src1)
+                }
+            },
+            junp_new_window1(){
+                window.open(this.ifram_src)
+            },
+            junp_new_window2(){
+                // window.open(this.ifram_src_marked)
+                window.open(this.ifram_src_julei)
+            },
+            junp_new_window2_julei(){
+                if(!this.src1){
+                    alert('请在左边输入框输入日期')
+                }else if(this.src1.length!=5){
+                    alert('请输入正确格式的日期，正确格式样例：04-07')
+                }else{
+                    window.open('/test_sql_img_marked/'+this.src1)
+                }
+            },
+        }
+
+
+    })
+</script>
+</html>

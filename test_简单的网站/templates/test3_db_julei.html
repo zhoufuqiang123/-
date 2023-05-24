@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>聚类结果</title>
+    <script type="text/javascript" src="../static/js/vue.js"></script>
+    <script type="text/javascript" src="../static/js/axios.min.js"></script>
+</head>
+<style>
+    .k{
+        font-size: 50px;
+        clear: both;
+    }
+    .img{
+        width: 150px;
+        height: 200px;
+        margin:15px ;
+    }
+    .input{
+        height: 37px;
+        width: 450px;
+        font-size: 21px;
+        color: gray;
+    }
+    .imgs_son{
+        /*width: 300px;*/
+        margin: 5px;
+        float: left;
+    }
+    .julei{
+
+    }
+    #root_title{
+        text-align: center;
+    }
+    /*.span1 span{*/
+    /*    position: absolute;*/
+    /*    left: 10px;*/
+    /*    top: 10px;*/
+    /*}*/
+    /*img{*/
+    /*    left: 30px;*/
+    /*    top: 30px;*/
+
+    /*}*/
+    /*.k{*/
+    /*    position: relative;*/
+    /*    left: 5px;*/
+
+    /*}*/
+</style>
+<body>
+<div id="root">
+    <h2 id="root_title">聚类结果</h2>
+<!--    <input type="number" v-model="num_clusters" placeholder="输入聚类人物个数">-->
+<!--    <button class="julei" @click="juLei">点击进行聚类</button>-->
+    <br>
+
+    <select name="" v-model="res_mark">
+    <option value="">请选择人名</option>
+    <option  v-for="i in staffs" :value="i" >{{i}}</option>
+    </select>
+    <button @click="update_batch_mark">点击进行标注</button>
+
+    <br>
+    <br>
+    <br>
+
+            {% for (v,k,j) in data_raw %}
+            <!-- v:标注结果，k:日期，j:数据           -->
+                <span class="imgs_son">
+                    <input type="checkbox" v-model="img_checkbox" value="[[[[v]]]]_[[[[k]]]]">
+                    <img  src="data:;base64,[[[[j]]]]" alt="暂无图片" class="img" @click="update_result_mark('[[[[v]]]]','[[[[k]]]]')">
+                    <br>
+                    <span>[[[[v,k]]]]</span>
+                    <br>
+
+                </span>
+            {% endfor %}
+
+<!--    <div>{{images}}</div>-->
+</div>
+<!--<img src="../static/img/1.jpeg" alt="">-->
+
+</body>
+<script>
+    Vue.config.productionTip=false
+
+    const vm = new Vue({
+        el:'#root',
+        data:{
+            staffs:[],
+            images:[],
+            toDir:'',
+            num_clusters:null,
+            res_date:'',
+            res_mark:'',
+            img_checkbox:[],
+        },
+        methods:{
+            update_result_mark(v,k,e){
+                if(!this.img_checkbox.length){
+                    console.log(this.img_checkbox)
+                    alert('请勾选需要修改的图片')
+                    return
+                }
+                console.log(v,k,'1111111111111111111111111111111111111111111111111')
+
+                // para=path.split('/')
+                // para1=para[para.length-1]
+                // para2=para[para.length-2]
+                //
+                axios
+                  .get('http://10.20.14.27:80/update_result_mark',{params:{name:v,datetime_:k,res_mark:this.res_mark,id:2}})
+                  .then(response => (console.log(response.data)))
+                  .catch(function (error) { // 请求失败处理
+                    console.log(error);
+                  });
+                // // location.reload();
+                // // this.toDir=''
+            },
+            update_batch_mark(){
+                if(!this.img_checkbox.length){
+                    alert('请勾选需要修改的图片')
+                    return
+                }
+                for(i in this.img_checkbox){
+                    this.img_checkbox[i] = this.img_checkbox[i].split('_')[1]
+                }
+                console.log(this.img_checkbox,'获取到img_checkbox')
+                console.log(this.res_mark,'获取到res_mark')
+                axios({
+                    url: 'http://10.20.14.27:80/update_batch_mark',
+                    method: 'post',
+                    responseType: 'json', // 默认的
+                    data: {
+                        img_checkbox:this.img_checkbox,
+                        res_mark:this.res_mark,
+                        id:2
+                    }
+                 }).then(function (response) {
+                    console.log(response);
+                    console.log(response.data);
+                 }).catch(function (error) {
+                    console.log(error);
+                 });
+                // location.reload()
+            },
+
+        },
+        mounted () {
+            axios
+              .get('http://10.20.14.27:80/select_all_status_name')
+              .then(response => (this.staffs=response.data.list_status,console.log(this.staffs)
+
+              ))
+              .catch(function (error) { // 请求失败处理
+               console.log(error);
+              });
+        },
+        filters:{
+            mySlice(value){
+                console.log(value)
+                value1 = value.split('/')[4]
+                console.log(value1)
+                value2 = value1.split('_')
+                return value2[0]+'_'+value2[1].slice(0,2)+':'+value2[1].slice(2,4)+value2[2].split('.')[0]
+            }
+        }
+    })
+</script>
+</html>
